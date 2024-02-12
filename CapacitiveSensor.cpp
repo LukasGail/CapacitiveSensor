@@ -39,18 +39,17 @@
 // Constructor /////////////////////////////////////////////////////////////////
 // Function that handles the creation and setup of instances
 
-CapacitiveSensor::CapacitiveSensor(uint8_t sendPin, uint8_t receivePin)
-{
-	// initialize this instance's variables
-	// Serial.begin(9600);		// for debugging
+CapacitiveSensor::CapacitiveSensor(uint8_t sendPin, uint8_t receivePin) {
+    // initialize this instance's variables
+    //    Serial.begin(115200);		// for debugging
 	error = 1;
 	loopTimingFactor = 310;		// determined empirically -  a hack
 
 	CS_Timeout_Millis = (2000 * (float)loopTimingFactor * (float)F_CPU) / 16000000;
 	CS_AutocaL_Millis = 20000;
 
-	// Serial.print("timwOut =  ");
-	// Serial.println(CS_Timeout_Millis);
+    //	 Serial.print("timwOut =  ");
+    //	 Serial.println(CS_Timeout_Millis);
 
 	// get pin mapping and port for send Pin - from PinMode function in core
 
@@ -58,27 +57,29 @@ CapacitiveSensor::CapacitiveSensor(uint8_t sendPin, uint8_t receivePin)
 	if (sendPin >= NUM_DIGITAL_PINS) error = -1;
 	if (receivePin >= NUM_DIGITAL_PINS) error = -1;
 #endif
+    //    Serial.println("Check for right pins ok.");
 
 	pinMode(sendPin, OUTPUT);						// sendpin to OUTPUT
 	pinMode(receivePin, INPUT);						// receivePin to INPUT
 	digitalWrite(sendPin, LOW);
+    //    Serial.println("Pin-mode set.");
 
 	sBit = PIN_TO_BITMASK(sendPin);					// get send pin's ports and bitmask
 	sReg = PIN_TO_BASEREG(sendPin);					// get pointer to output register
 
 	rBit = PIN_TO_BITMASK(receivePin);				// get receive pin's ports and bitmask
 	rReg = PIN_TO_BASEREG(receivePin);
+    //    Serial.println("Registers set.");
 
 	// get pin mapping and port for receive Pin - from digital pin functions in Wiring.c
 	leastTotal = 0x0FFFFFFFL;   // input large value for autocalibrate begin
 	lastCal = millis();         // set millis for start
 }
 
-// Public Methods //////////////////////////////////////////////////////////////
-// Functions available in Wiring sketches, this library, and other libraries
+    // Public Methods //////////////////////////////////////////////////////////////
+    // Functions available in Wiring sketches, this library, and other libraries
 
-long CapacitiveSensor::capacitiveSensor(uint8_t samples)
-{
+long CapacitiveSensor::capacitiveSensor(uint8_t samples) {
 	total = 0;
 	if (samples == 0) return 0;
 	if (error < 0) return -1;            // bad pin
@@ -90,8 +91,9 @@ long CapacitiveSensor::capacitiveSensor(uint8_t samples)
 
 		// only calibrate if time is greater than CS_AutocaL_Millis and total is less than 10% of baseline
 		// this is an attempt to keep from calibrating when the sensor is seeing a "touched" signal
-		unsigned long diff = (total > leastTotal) ? total - leastTotal : leastTotal - total;
-		if ( (millis() - lastCal > CS_AutocaL_Millis) && diff < (int)(.10 * (float)leastTotal) ) {
+		
+		// Changed to abs() function and added cast to double because there was a compile time error where it is not known which overloaded function to use based on different types.
+		if ( (millis() - lastCal > CS_AutocaL_Millis && abs((double)(total  - leastTotal)) < (int)(.10 * (float)leastTotal))) {
 
 			// Serial.println();               // debugging
 			// Serial.println("auto-calibrate");
@@ -122,8 +124,7 @@ long CapacitiveSensor::capacitiveSensor(uint8_t samples)
 
 }
 
-long CapacitiveSensor::capacitiveSensorRaw(uint8_t samples)
-{
+long CapacitiveSensor::capacitiveSensorRaw(uint8_t samples) {
 	total = 0;
 	if (samples == 0) return 0;
 	if (error < 0) return -1;                  // bad pin - this appears not to work
@@ -148,11 +149,10 @@ void CapacitiveSensor::set_CS_Timeout_Millis(unsigned long timeout_millis){
 	CS_Timeout_Millis = (timeout_millis * (float)loopTimingFactor * (float)F_CPU) / 16000000;  // floats to deal with large numbers
 }
 
-// Private Methods /////////////////////////////////////////////////////////////
-// Functions only available to other functions in this library
+    // Private Methods /////////////////////////////////////////////////////////////
+    // Functions only available to other functions in this library
 
-int CapacitiveSensor::SenseOneCycle(void)
-{
+int CapacitiveSensor::SenseOneCycle(void) {
     noInterrupts();
 	DIRECT_WRITE_LOW(sReg, sBit);	// sendPin Register low
 	DIRECT_MODE_INPUT(rReg, rBit);	// receivePin to input (pullups are off)
